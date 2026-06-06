@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stava - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            background: linear-gradient(135deg, #0b6fb5 0%, #005f8a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .logo {
+            font-size: 60px;
+            font-weight: 700;
+            color: #0b6fb5;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 50px;
+            font-weight: 300;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 40px;
+            flex-direction: column;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-btn.map {
+            background: linear-gradient(135deg, #0b6fb5 0%, #005f8a 100%);
+        }
+
+        .nav-btn.map:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(11, 111, 181, 0.4);
+        }
+
+        .nav-btn.stats {
+            background: linear-gradient(135deg, #0b6fb5 0%, #005f8a 100%);
+        }
+
+        .nav-btn.stats:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(11, 111, 181, 0.4);
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        @media (min-width: 600px) {
+            .nav-buttons {
+                flex-direction: row;
+            }
+
+            .nav-btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Stava</div>
+        <p class="tagline">Analyze your activities by directly importing data from Strava
+        </p>
+
+        <div class="nav-buttons">
+            <a href="/{{ BASE_URL }}/{{ MAP_URL }}/" class="nav-btn map">
+                <span class="icon">🗺️</span>
+                <span>Run Map</span>
+            </a>
+            <a href="/{{ BASE_URL }}/{{ STATS_URL }}/" class="nav-btn stats">
+                <span class="icon">📊</span>
+                <span>Statistics</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="padding: 20px;">
+	<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+		<div>
+			<h1 style="color: #0b6fb5; margin: 0;">Statistics</h1>
+			<p style="margin: 6px 0 0 0; font-size: 14px; color: #666;">Analyze your activities</p>
+		</div>
+		<div style="display: flex; gap: 8px;">
+			<a href="/{{ BASE_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">← Home</a>
+			<a href="/{{ BASE_URL }}/{{ MAP_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">🗺️ Map</a>
+			<a href="/{{ BASE_URL }}/import" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">📤 Import</a>
+		</div>
+	</div>
+
+	<div id="statsContainer" style="display: grid; gap: 24px;">
+		<!-- Summary Cards -->
+		<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<div style="color: #999; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Total Activities</div>
+				<div style="font-size: 32px; font-weight: 700; color: #0b6fb5;" id="totalActivities">0</div>
+			</div>
+
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<div style="color: #999; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Total Distance</div>
+				<div style="font-size: 32px; font-weight: 700; color: #0b6fb5;" id="totalDistance">0 km</div>
+			</div>
+
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<div style="color: #999; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Total Time</div>
+				<div style="font-size: 32px; font-weight: 700; color: #0b6fb5;" id="totalTime">0h</div>
+			</div>
+
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<div style="color: #999; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Average Distance</div>
+				<div style="font-size: 32px; font-weight: 700; color: #0b6fb5;" id="avgDistance">0 km</div>
+			</div>
+
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<div style="color: #999; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Average Pace</div>
+				<div style="font-size: 32px; font-weight: 700; color: #0b6fb5;" id="avgPace">N/A</div>
+			</div>
+		</div>
+
+		<!-- Charts Section -->
+		<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+			<!-- Monthly Distance Chart -->
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<h3 style="color: #0b6fb5; margin-bottom: 16px;">Distance by Month</h3>
+				<canvas id="monthlyDistanceChart"></canvas>
+			</div>
+
+			<!-- Monthly Activities Chart -->
+			<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+				<h3 style="color: #0b6fb5; margin-bottom: 16px;">Activities by Month</h3>
+				<canvas id="monthlyActivitiesChart"></canvas>
+			</div>
+		</div>
+
+		<!-- Activity Type Breakdown -->
+		<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+			<h3 style="color: #0b6fb5; margin-bottom: 16px;">Activity Types</h3>
+			<div id="activityTypeBreakdown" style="display: grid; gap: 12px;">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+
+		<!-- Activities Table -->
+		<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+			<h3 style="color: #0b6fb5; margin-bottom: 16px;">All Activities</h3>
+			<div id="activitiesTable" style="overflow-x: auto;">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+	const BASE_URL = '{{ BASE_URL }}';
+	const MAP_URL = '{{ MAP_URL }}';
+	const STATS_URL = '{{ STATS_URL }}';
+	let monthlyDistanceChart = null;
+	let monthlyActivitiesChart = null;
+
+	async function loadStats() {
+		try {
+			const res = await fetch(`/${BASE_URL}/api/stats-summary`);
+			if (!res.ok) throw new Error('Failed to fetch stats');
+			const data = await res.json();
+
+			// Update summary cards
+			document.getElementById('totalActivities').textContent = data.total_activities;
+			document.getElementById('totalDistance').textContent = data.total_distance.toFixed(2) + ' km';
+			document.getElementById('totalTime').textContent = formatDuration(data.total_time);
+			document.getElementById('avgDistance').textContent = data.avg_distance.toFixed(2) + ' km';
+			document.getElementById('avgPace').textContent = data.avg_pace;
+
+			// Render charts
+			renderMonthlyCharts(data.monthly_data);
+
+			// Activity type breakdown
+			renderActivityTypeBreakdown(data.all_activities);
+
+			// Activities table
+			renderActivitiesTable(data.all_activities);
+		} catch (error) {
+			console.error('Error loading stats:', error);
+			document.getElementById('statsContainer').innerHTML = `<div style="color: #d32f2f; padding: 20px; text-align: center;">Error loading statistics: ${error.message}</div>`;
+		}
+	}
+
+	function formatDuration(seconds) {
+		if (!seconds || seconds <= 0) return '0s';
+		const hrs = Math.floor(seconds / 3600);
+		const mins = Math.floor((seconds % 3600) / 60);
+		const secs = seconds % 60;
+		return hrs ? `${hrs}h ${mins}m ${secs}s` : `${mins}m ${secs}s`;
+	}
+
+	function renderMonthlyCharts(monthlyData) {
+		const months = Object.keys(monthlyData).sort();
+		const distances = months.map(m => monthlyData[m].distance);
+		const counts = months.map(m => monthlyData[m].count);
+
+		// Distance chart
+		const distCtx = document.getElementById('monthlyDistanceChart').getContext('2d');
+		if (monthlyDistanceChart) monthlyDistanceChart.destroy();
+		monthlyDistanceChart = new Chart(distCtx, {
+			type: 'bar',
+			data: {
+				labels: months.map(m => new Date(m + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })),
+				datasets: [{
+					label: 'Distance (km)',
+					data: distances,
+					backgroundColor: '#0b6fb5',
+					borderRadius: 6,
+					borderSkipped: false,
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { color: '#666' },
+						grid: { color: '#f0f0f0' }
+					},
+					x: {
+						ticks: { color: '#666' },
+						grid: { display: false }
+					}
+				}
+			}
+		});
+
+		// Activities chart
+		const actCtx = document.getElementById('monthlyActivitiesChart').getContext('2d');
+		if (monthlyActivitiesChart) monthlyActivitiesChart.destroy();
+		monthlyActivitiesChart = new Chart(actCtx, {
+			type: 'line',
+			data: {
+				labels: months.map(m => new Date(m + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })),
+				datasets: [{
+					label: 'Activities',
+					data: counts,
+					borderColor: '#0b6fb5',
+					backgroundColor: 'rgba(11, 111, 181, 0.1)',
+					borderWidth: 2,
+					fill: true,
+					tension: 0.4,
+					pointBackgroundColor: '#0b6fb5',
+					pointBorderColor: '#fff',
+					pointBorderWidth: 2,
+					pointRadius: 5,
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { color: '#666' },
+						grid: { color: '#f0f0f0' }
+					},
+					x: {
+						ticks: { color: '#666' },
+						grid: { display: false }
+					}
+				}
+			}
+		});
+	}
+
+	function renderActivityTypeBreakdown(activities) {
+		const typeMap = {};
+		activities.forEach(act => {
+			const type = act.activity_type || 'run';
+			if (!typeMap[type]) typeMap[type] = { count: 0, distance: 0 };
+			typeMap[type].count += 1;
+			typeMap[type].distance += act.distance_km;
+		});
+
+		const container = document.getElementById('activityTypeBreakdown');
+		container.innerHTML = '';
+		Object.entries(typeMap).forEach(([type, data]) => {
+			const pct = ((data.count / activities.length) * 100).toFixed(1);
+			const row = document.createElement('div');
+			row.style.padding = '12px';
+			row.style.background = '#f9f9f9';
+			row.style.borderRadius = '6px';
+			row.style.display = 'flex';
+			row.style.justifyContent = 'space-between';
+			row.style.alignItems = 'center';
+			row.innerHTML = `
+				<div>
+					<div style="font-weight: 600; color: #0b6fb5; text-transform: capitalize;">${type}</div>
+					<div style="font-size: 12px; color: #666;">${data.count} activities</div>
+				</div>
+				<div style="text-align: right;">
+					<div style="font-weight: 600; color: #0b6fb5;">${data.distance.toFixed(1)} km</div>
+					<div style="font-size: 12px; color: #666;">${pct}%</div>
+				</div>
+			`;
+			container.appendChild(row);
+		});
+	}
+
+	function renderActivitiesTable(activities) {
+		const container = document.getElementById('activitiesTable');
+		if (!activities.length) {
+			container.innerHTML = '<div style="color: #999; padding: 20px; text-align: center;">No activities yet. <a href="/{{ BASE_URL }}/import" style="color: #0b6fb5; text-decoration: underline;">Import some!</a></div>';
+			return;
+		}
+
+		// Sort by date descending
+		activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+		const table = document.createElement('table');
+		table.style.width = '100%';
+		table.style.borderCollapse = 'collapse';
+
+		// Header
+		const header = document.createElement('tr');
+		header.style.borderBottom = '2px solid #e0e0e0';
+		header.innerHTML = `
+			<th style="padding: 12px; text-align: left; color: #0b6fb5; font-weight: 600;">Date</th>
+			<th style="padding: 12px; text-align: center; color: #0b6fb5; font-weight: 600;">Type</th>
+			<th style="padding: 12px; text-align: right; color: #0b6fb5; font-weight: 600;">Distance (km)</th>
+			<th style="padding: 12px; text-align: right; color: #0b6fb5; font-weight: 600;">Duration</th>
+			<th style="padding: 12px; text-align: right; color: #0b6fb5; font-weight: 600;">Pace</th>
+		`;
+		table.appendChild(header);
+
+		// Rows
+		activities.forEach((act, idx) => {
+			const row = document.createElement('tr');
+			row.style.borderBottom = '1px solid #f0f0f0';
+			if (idx % 2 === 0) row.style.backgroundColor = '#f9f9f9';
+
+			const date = new Date(act.start_time);
+			const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+			
+			let pace = 'N/A';
+			if (act.distance_km > 0 && act.duration_seconds > 0) {
+				const paceSeconds = act.duration_seconds / act.distance_km;
+				const paceMin = Math.floor(paceSeconds / 60);
+				const paceSec = Math.round(paceSeconds % 60);
+				pace = `${paceMin}:${String(paceSec).padStart(2, '0')}`;
+			}
+
+			row.innerHTML = `
+				<td style="padding: 12px; color: #333;">${dateStr}</td>
+				<td style="padding: 12px; text-align: center; color: #666; text-transform: capitalize;">${act.activity_type || 'run'}</td>
+				<td style="padding: 12px; text-align: right; color: #333; font-weight: 600;">${act.distance_km.toFixed(2)}</td>
+				<td style="padding: 12px; text-align: right; color: #666;">${formatDuration(act.duration_seconds)}</td>
+				<td style="padding: 12px; text-align: right; color: #666;">${pace}</td>
+			`;
+			table.appendChild(row);
+		});
+
+		container.innerHTML = '';
+		container.appendChild(table);
+	}
+
+	// Load stats on page load
+	loadStats();
+</script>
+
+{% endblock %}

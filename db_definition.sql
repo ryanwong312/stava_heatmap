@@ -3,8 +3,16 @@
 -- 2) Add appropriate fields with the data type
 
 
-CREATE TABLE IF NOT EXISTS TABLE_NAME  (
-    id INTEGER PRIMARY KEY AUTOINCREMENT
+-- activities table to store parsed runs
+CREATE TABLE IF NOT EXISTS activities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    filename TEXT,
+    start_time TEXT,
+    distance_km REAL,
+    duration_seconds INTEGER,
+    coords_json TEXT,
+    activity_type TEXT DEFAULT 'run'
 );
 
 

@@ -3,7 +3,7 @@ name = "project_webapps"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "ms.brown",email = "eqbrown@isf.edu.hk"}
+    {name = "ryan",email = "wongryan312@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -17,3 +17,5 @@ package-mode = false
 [tool.poetry.dependencies]
 flask = "^3.1.2"
 flask-wtf = "^1.2.2"
+gpxpy = "^1.6.2"
+fitparse = "^1.6.0"

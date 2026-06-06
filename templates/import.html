@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div style="max-width:800px; margin:24px auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h2 style="color:#0b6fb5; margin: 0;">Import Activities</h2>
+      <a href="/{{ BASE_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">← Back to Home</a>
+    </div>
+    <p>Choose files or a folder exported from Strava. Supported: <code>.gpx</code>, <code>.gpx.gz</code>, <code>.fit</code>, and <code>.fit.gz</code>.</p>
+
+    <div>
+      <div style="margin-bottom:8px">
+        <label><strong>Select files</strong></label>
+        <input type="file" id="files" multiple accept=".gpx,.gz,.fit,.gpx.gz,.fit.gz" style="width:100%" />
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label><strong>Or select a folder</strong> (Chrome/Edge/Brave support)</label>
+        <input type="file" id="folder" webkitdirectory directory multiple style="width:100%" />
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+        <button id="uploadBtn" style="background:#0b6fb5;color:white;padding:8px 12px;border-radius:6px;border:none">Upload</button>
+        <button id="queueBtn" style="background:#ffaa00;color:white;padding:8px 12px;border-radius:6px;border:none; margin-left:8px">Queue</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div id="progressContainer" style="display:none; margin-top:8px">
+          <div style="background:#e6f2ff; height:12px; border-radius:6px; overflow:hidden"><div id="progressBar" style="height:12px; background:#0b6fb5; width:0%"></div></div>
+          <div id="progressText" style="margin-top:6px">0 / 0</div>
+        </div>
+
+        <div id="result" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <script>
+      const BASE_URL = '{{ BASE_URL }}';
+      const MAP_URL = '{{ MAP_URL }}';
+      const filesInput = document.getElementById('files');
+      const folderInput = document.getElementById('folder');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      const resultDiv = document.getElementById('result');
+
+      let selectedFiles = [];
+
+      function collectFiles() {
+        selectedFiles = [];
+        if (folderInput.files && folderInput.files.length) {
+          selectedFiles = Array.from(folderInput.files);
+        } else if (filesInput.files && filesInput.files.length) {
+          selectedFiles = Array.from(filesInput.files);
+        }
+      }
+
+      uploadBtn.addEventListener('click', async () => {
+        collectFiles();
+        if (!selectedFiles.length) { alert('No files selected'); return; }
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = `0 / ${selectedFiles.length}`;
+        resultDiv.innerHTML = '';
+
+        const failed = [];
+        for (let i=0;i<selectedFiles.length;i++) {
+          const f = selectedFiles[i];
+          const fd = new FormData();
+          fd.append('files', f, f.name);
+          try {
+            const res = await fetch(`/${BASE_URL}/api/import`, { method: 'POST', body: fd });
+            const j = await res.json();
+            if (j.errors && j.errors.length) {
+              j.errors.forEach(e => failed.push(f));
+            }
+          } catch (err) {
+            failed.push(f);
+          }
+          progressBar.style.width = `${Math.round(((i+1)/selectedFiles.length)*100)}%`;
+          progressText.textContent = `${i+1} / ${selectedFiles.length}`;
+        }
+
+        if (failed.length) {
+          resultDiv.innerHTML = `<div style="color:#b01">Failed: ${failed.length} files.</div>`;
+          const retryBtn = document.createElement('button');
+          retryBtn.textContent = 'Retry Failed';
+          retryBtn.style.marginTop = '8px';
+          retryBtn.onclick = async () => {
+            // retry logic: attempt to re-upload failed files
+            const toRetry = failed.splice(0);
+            progressBar.style.width = '0%';
+            progressText.textContent = `0 / ${toRetry.length}`;
+            for (let i=0;i<toRetry.length;i++){
+              const f = toRetry[i];
+              const fd = new FormData(); fd.append('files', f, f.name);
+              try { await fetch(`/${BASE_URL}/api/import`, { method: 'POST', body: fd }); }
+              catch(e) { /* ignore */ }
+              progressBar.style.width = `${Math.round(((i+1)/toRetry.length)*100)}%`;
+              progressText.textContent = `${i+1} / ${toRetry.length}`;
+            }
+            resultDiv.innerHTML = '<div style="color:green">Retry complete — check map.</div>';
+          };
+          resultDiv.appendChild(retryBtn);
+        } else {
+          resultDiv.innerHTML = '<div style="color:green">All files imported — check map or stats.</div>';
+        }
+      });
+
+      document.getElementById('queueBtn').addEventListener('click', async () => {
+        collectFiles();
+        if (!selectedFiles.length) { alert('No files selected'); return; }
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = `0 / ${selectedFiles.length}`;
+        resultDiv.innerHTML = '';
+        const failed = [];
+        for (let i=0;i<selectedFiles.length;i++) {
+          const f = selectedFiles[i];
+          const fd = new FormData();
+          fd.append('files', f, f.name);
+          try {
+            const res = await fetch(`/${BASE_URL}/api/queue_import`, { method: 'POST', body: fd });
+            const j = await res.json();
+            if (j.errors && j.errors.length) failed.push(f);
+          } catch (err) { failed.push(f); }
+          progressBar.style.width = `${Math.round(((i+1)/selectedFiles.length)*100)}%`;
+          progressText.textContent = `${i+1} / ${selectedFiles.length}`;
+        }
+        if (failed.length) resultDiv.innerHTML = `<div style="color:#b01">Failed to queue: ${failed.length} files.</div>`;
+        else resultDiv.innerHTML = '<div style="color:green">Queued files — run processor to import.</div>';
+      });
+    </script>
+  </div>
+
+{% endblock %}

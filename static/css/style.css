@@ -1,7 +1,11 @@
 body {
-    font-family: sans-serif;
-    background-color: #f0f0f0;
-    color: #333;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    background-color: #eaf6ff; /* very light blue */
+    color: #0b2b4a; /* dark blue text */
     margin: 0;
 }
+
+.btn { background:#0b6fb5; color:white; padding:8px 10px; border-radius:6px; text-decoration:none }
+
+h1, h2, h3 { font-weight:600 }
 

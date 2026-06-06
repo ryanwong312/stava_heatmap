@@ -1,8 +1,686 @@
 {% extends 'base.html' %}
 
 {% block content %}
-	
-	<h1>Web Apps Project!</h1>
 
+<div style="padding: 20px; height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
+	<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+		<div>
+			<h1 style="color: #0b6fb5; margin: 0;">Run Map</h1>
+			<p style="margin: 6px 0 0 0; font-size: 14px; color: #666;">Explore your fitness journey</p>
+		</div>
+		<div style="display: flex; gap: 8px;">
+			<a href="/{{ BASE_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+				<span>← Home</span>
+			</a>
+			<a href="/{{ BASE_URL }}/{{ STATS_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+				<span>📊 Stats</span>
+			</a>
+			<a href="/{{ BASE_URL }}/import" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+				<span>📤 Import</span>
+			</a>
+		</div>
+	</div>
+
+	<div style="display:flex; gap:16px; flex:1; overflow:hidden; min-height:0;">
+		<div style="flex:1; display:flex; flex-direction:column; gap:16px; overflow:hidden; min-height:0;">
+			<div id="map" style="flex:1; border-radius:8px; overflow:hidden; min-height:0;"></div>
+		</div>
+
+		<div style="width:340px; display:flex; flex-direction:column; gap:16px; height:100%; overflow-y:auto; min-height:0;">
+			<!-- Filters Box (Top) -->
+			<div style="background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); flex-shrink:0;" id="filtersBox">
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+					<h3 style="margin:0;color:#0b6fb5">Filters</h3>
+					<button id="toggleFilters" style="background:none; border:none; font-size:18px; cursor:pointer; color:#0b6fb5;">−</button>
+				</div>
+				
+				<div id="filtersContent">
+					<label style="display:block; margin-bottom:8px;">Min distance (km): <span id="minVal">0</span></label>
+					<input id="minRange" type="range" min="0" max="50" step="0.1" value="0" style="width:100%;" />
+
+					<label style="display:block; margin-top:12px; margin-bottom:8px;">Max distance (km): <span id="maxVal">50</span></label>
+					<input id="maxRange" type="range" min="0" max="100" step="0.1" value="100" style="width:100%;" />
+
+					<div style="margin-top:12px;">
+						<label style="display:block; margin-bottom:6px; font-weight:600;">Activity Type:</label>
+						<label style="display:block; margin:4px 0;"><input type="checkbox" id="typeRun" checked /> Run</label>
+						<label style="display:block; margin:4px 0;"><input type="checkbox" id="typeWalk" checked /> Walk</label>
+						<label style="display:block; margin:4px 0;"><input type="checkbox" id="typeBike" checked /> Bike</label>
+					</div>
+
+					<label style="display:block; margin-top:12px; margin-bottom:4px;">Search by date:</label>
+					<input id="dateSearch" type="date" style="width:100%; padding:4px; border:1px solid #ddd; border-radius:4px;" />
+
+					<!-- Global Formatting Controls -->
+					<div style="margin-top:12px; padding:10px; background:#f9f9f9; border-radius:6px; border:1px solid #e0e0e0;">
+						<label style="display:block; margin-bottom:8px; font-weight:600; font-size:12px;">Global Formatting:</label>
+						<label style="display:block; margin-bottom:8px;"><input type="radio" id="globalModeAll" name="globalMode" value="all" checked /> Apply to ALL runs</label>
+						<label style="display:block; margin-bottom:8px;"><input type="radio" id="globalModeSelected" name="globalMode" value="selected" /> Apply to SELECTED only</label>
+						
+						<label style="display:block; margin-top:8px; margin-bottom:4px; font-size:12px;">Color:</label>
+						<input id="globalColor" type="color" value="#003f5c" style="width:100%; height:32px; cursor:pointer; border:1px solid #ddd; border-radius:4px;" />
+
+						<label style="display:block; margin-top:8px; margin-bottom:4px; font-size:12px;">Width: <span id="globalWidthVal">4</span>px</label>
+						<input id="globalWidth" type="range" min="1" max="12" value="4" style="width:100%;" />
+					</div>
+
+					<button id="resetBtn" style="width:100%; margin-top:12px; background:#d32f2f; color:white; padding:8px 12px; border-radius:6px; border:none; font-size:12px; cursor:pointer;">Reset Database</button>
+				</div>
+
+				<hr />
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+					<strong style="font-size:12px;">Activities</strong>
+					<button id="toggleActivities" style="background:none; border:none; font-size:16px; cursor:pointer; color:#0b6fb5;">−</button>
+				</div>
+				<div id="activityList" style="max-height:150px; overflow:auto;"></div>
+			</div>
+
+			<!-- Stats Box -->
+			<div style="background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); flex-shrink:0;" id="statsBoxContainer">
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+					<h3 style="margin:0;color:#0b6fb5">Statistics</h3>
+					<button id="toggleStats" style="background:none; border:none; font-size:18px; cursor:pointer; color:#0b6fb5;">−</button>
+				</div>
+				<div id="statsBox" style="font-size:12px;">
+					<div style="margin:8px 0;">Loading stats...</div>
+				</div>
+			</div>
+
+			<!-- Details -->
+			<div style="background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); flex-shrink:0;" id="detailsBoxContainer">
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+					<h3 style="margin:0;color:#0b6fb5">Details</h3>
+					<button id="toggleDetails" style="background:none; border:none; font-size:18px; cursor:pointer; color:#0b6fb5;">−</button>
+				</div>
+				<div id="details" style="max-height:200px; overflow-y:auto;">
+					<em style="font-size:12px;">Hover or click a run to see details here.</em>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	const BASE_URL = '{{ BASE_URL }}';
+	const MAP_URL = '{{ MAP_URL }}';
+	const STATS_URL = '{{ STATS_URL }}';
+	const GOOGLE_MAPS_API_KEY = '{{ GOOGLE_MAPS_API_KEY | default("") }}';
+	let map = null;
+	let activityMap = {};
+	let allActivities = [];
+	let highlightedPolyline = null;
+	let activityVisibility = {};
+
+	// Collapsed state for boxes
+	const collapsedState = {
+		filters: false,
+		activities: false,
+		stats: false,
+		details: false
+	};
+
+	function formatDuration(seconds) {
+		if (!seconds || seconds <= 0) return '0s';
+		const hrs = Math.floor(seconds / 3600);
+		const mins = Math.floor((seconds % 3600) / 60);
+		const secs = seconds % 60;
+		return hrs ? `${hrs}h ${mins}m ${secs}s` : `${mins}m ${secs}s`;
+	}
+
+	function formatShortDuration(seconds) {
+		if (!seconds || seconds <= 0) return '0s';
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${mins}m ${secs}s`;
+	}
+
+	function getActivityDate(act) {
+		if (!act.start_time) return new Date(0);
+		return new Date(act.start_time);
+	}
+
+	function formatActivityDate(date) {
+		return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+	}
+
+	function getActivityType(act) {
+		return act.activity_type || 'run';
+	}
+
+	function toggleBox(boxId, contentId, buttonId) {
+		const button = document.getElementById(buttonId);
+		const content = document.getElementById(contentId);
+		
+		collapsedState[boxId] = !collapsedState[boxId];
+		
+		if (collapsedState[boxId]) {
+			content.style.display = 'none';
+			button.textContent = '+';
+		} else {
+			content.style.display = 'block';
+			button.textContent = '−';
+		}
+	}
+
+	document.getElementById('toggleFilters').addEventListener('click', () => {
+		toggleBox('filters', 'filtersContent', 'toggleFilters');
+	});
+
+	document.getElementById('toggleActivities').addEventListener('click', () => {
+		toggleBox('activities', 'activityList', 'toggleActivities');
+	});
+
+	document.getElementById('toggleStats').addEventListener('click', () => {
+		toggleBox('stats', 'statsBox', 'toggleStats');
+	});
+
+	document.getElementById('toggleDetails').addEventListener('click', () => {
+		toggleBox('details', 'details', 'toggleDetails');
+	});
+
+	async function deleteActivity(actId) {
+		if (!confirm('Are you sure you want to delete this activity?')) {
+			return;
+		}
+		try {
+			const res = await fetch(`/${BASE_URL}/api/delete/${actId}`, { method: 'DELETE' });
+			const result = await res.json();
+			if (result.success) {
+				// Remove from local array and reload
+				allActivities = allActivities.filter(a => a.id !== actId);
+				loadActivities();
+			} else {
+				alert('Failed to delete activity: ' + result.error);
+			}
+		} catch (error) {
+			console.error('Delete error:', error);
+			alert('Error deleting activity: ' + error.message);
+		}
+	}
+
+	document.getElementById('resetBtn').addEventListener('click', async () => {
+		if (!confirm('Are you sure you want to reset the database and clear all activities? This cannot be undone.')) {
+			return;
+		}
+		try {
+			const res = await fetch(`/${BASE_URL}/api/reset`, { method: 'POST' });
+			const result = await res.json();
+			if (result.success) {
+				allActivities = [];
+				clearMap();
+				renderActivityList([]);
+				renderStats([]);
+				alert('Database reset successfully. All activities have been cleared.');
+			} else {
+				alert('Failed to reset database: ' + result.error);
+			}
+		} catch (error) {
+			console.error('Reset error:', error);
+			alert('Error resetting database: ' + error.message);
+		}
+	});
+
+	function showMapError(message) {
+		const mapDiv = document.getElementById('map');
+		mapDiv.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#333;background:#f5f5f5;border:1px solid #ddd;padding:20px;text-align:center;"><div><strong>Google Maps could not load.</strong><div style="margin-top:8px;font-size:14px;">${message}</div></div></div>`;
+	}
+
+	function loadGoogleMapsApi() {
+		return new Promise((resolve, reject) => {
+			if (window.google && window.google.maps) return resolve(window.google.maps);
+			if (!GOOGLE_MAPS_API_KEY) {
+				reject(new Error('Missing Google Maps API key. Set GOOGLE_MAPS_API_KEY in your environment.'));
+				return;
+			}
+			window.initMap = () => resolve(window.google.maps);
+			window.gm_authFailure = () => reject(new Error('Google Maps authentication failed. Invalid API key or Maps JavaScript API not enabled.'));
+			const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+			if (existing) {
+				existing.addEventListener('load', () => {
+					if (window.google && window.google.maps) resolve(window.google.maps);
+					else reject(new Error('Google Maps loaded but did not initialize correctly.'));
+				});
+				existing.addEventListener('error', () => reject(new Error('Failed to load Google Maps JS')));
+				return;
+			}
+			const script = document.createElement('script');
+			script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap`;
+			script.async = true;
+			script.defer = true;
+			script.onerror = () => reject(new Error('Failed to load Google Maps JS'));
+			document.head.appendChild(script);
+		});
+	}
+
+	function ensureMap() {
+		if (map) return;
+		const mapDiv = document.getElementById('map');
+		mapDiv.innerHTML = '';
+		map = new google.maps.Map(mapDiv, {
+			center: { lat: 0, lng: 0 },
+			zoom: 2,
+			mapTypeId: 'satellite',
+			tilt: 45,
+			streetViewControl: false,
+			mapTypeControl: true,
+		});
+		setTimeout(() => {
+			const gmErr = mapDiv.querySelector('.gm-err-container');
+			if (gmErr) {
+				showMapError('Google Maps failed to initialize. Please verify your API key and Maps JavaScript API settings.');
+			}
+		}, 1200);
+	}
+
+	function clearMap() {
+		Object.values(activityMap).forEach(entry => {
+			if (entry.poly) entry.poly.setMap(null);
+		});
+		activityMap = {};
+	}
+
+	function applyGlobalFormatting() {
+		const globalMode = document.querySelector('input[name="globalMode"]:checked').value;
+		const globalColor = document.getElementById('globalColor').value;
+		const globalWidth = parseInt(document.getElementById('globalWidth').value);
+
+		Object.entries(activityMap).forEach(([actId, entry]) => {
+			if (globalMode === 'selected') {
+				const cb = document.querySelector(`input[data-activity-id="${actId}"]`);
+				if (!cb || !cb.checked) return;
+			}
+			if (entry.poly) {
+				entry.poly.setOptions({ strokeColor: globalColor, strokeWeight: globalWidth });
+				entry.strokeColor = globalColor;
+				entry.strokeWeight = globalWidth;
+			}
+		});
+	}
+
+	function renderStats(data) {
+		if (!data.length) {
+			document.getElementById('statsBox').innerHTML = '<div style="color:#999;">No activities to display.</div>';
+			return;
+		}
+
+		const longestDist = data.reduce((max, a) => a.distance_km > max.distance_km ? a : max);
+		const longestTime = data.reduce((max, a) => a.duration_seconds > max.duration_seconds ? a : max);
+		const fastestPace = data.reduce((min, a) => {
+			const paceA = a.distance_km > 0 ? a.duration_seconds / a.distance_km : Infinity;
+			const paceMin = min.distance_km > 0 ? min.duration_seconds / min.distance_km : Infinity;
+			return paceA < paceMin ? a : min;
+		});
+		const firstRun = data.reduce((min, a) => getActivityDate(a) < getActivityDate(min) ? a : min);
+		const lastRun = data.reduce((max, a) => getActivityDate(a) > getActivityDate(max) ? a : max);
+
+		const makeStatRow = (label, act) => {
+			const date = formatActivityDate(getActivityDate(act));
+			const div = document.createElement('div');
+			div.style.padding = '6px';
+			div.style.marginBottom = '6px';
+			div.style.background = '#f5f5f5';
+			div.style.borderRadius = '4px';
+			div.style.cursor = 'pointer';
+			div.style.borderLeft = '3px solid #0b6fb5';
+			div.innerHTML = `<strong>${label}</strong><br/><small>${date}</small>`;
+			div.addEventListener('click', () => highlightActivity(act.id));
+			div.addEventListener('mouseenter', () => div.style.background = '#efefef');
+			div.addEventListener('mouseleave', () => div.style.background = '#f5f5f5');
+			return div;
+		};
+
+		const statsBox = document.getElementById('statsBox');
+		statsBox.innerHTML = '';
+		statsBox.appendChild(makeStatRow(`📏 Longest distance: ${longestDist.distance_km.toFixed(2)} km`, longestDist));
+		statsBox.appendChild(makeStatRow(`⏱️ Longest time: ${formatDuration(longestTime.duration_seconds)}`, longestTime));
+		statsBox.appendChild(makeStatRow(`🏃 Fastest pace: ${(longestTime.duration_seconds / fastestPace.distance_km / 60).toFixed(1)} min/km`, fastestPace));
+		statsBox.appendChild(makeStatRow(`📅 First run: ${formatActivityDate(getActivityDate(firstRun))}`, firstRun));
+		statsBox.appendChild(makeStatRow(`📍 Last run: ${formatActivityDate(getActivityDate(lastRun))}`, lastRun));
+	}
+
+	function highlightActivity(actId) {
+		if (highlightedPolyline) {
+			highlightedPolyline.setOptions({ strokeWeight: 4, strokeOpacity: 0.8 });
+		}
+		const entry = activityMap[actId];
+		if (entry && entry.poly) {
+			entry.poly.setOptions({ strokeWeight: 8, strokeOpacity: 1 });
+			highlightedPolyline = entry.poly;
+		}
+	}
+
+	function renderActivityList(data) {
+		const list = document.getElementById('activityList');
+		list.innerHTML = '';
+		if (!data.length) {
+			list.innerHTML = '<div style="padding:12px; color:#666; font-size:12px;">No activities found.</div>';
+			return;
+		}
+		data.sort((a, b) => getActivityDate(b) - getActivityDate(a));
+		data.forEach(act => {
+			const entry = activityMap[act.id];
+			const isVisible = activityVisibility[act.id] !== false;
+
+			const row = document.createElement('div');
+			row.style.padding = '8px 6px';
+			row.style.borderBottom = '1px solid #f0f0f0';
+			row.style.display = 'grid';
+			row.style.gridTemplateColumns = 'auto 1fr auto';
+			row.style.gap = '8px';
+			row.style.alignItems = 'center';
+			row.style.fontSize = '11px';
+
+			const controls = document.createElement('div');
+			controls.style.display = 'grid';
+			controls.style.gap = '4px';
+
+			const cb = document.createElement('input');
+			cb.type = 'checkbox';
+			cb.checked = isVisible;
+			cb.setAttribute('data-activity-id', act.id);
+			cb.addEventListener('change', () => {
+				activityVisibility[act.id] = cb.checked;
+				if (entry && entry.poly) {
+					entry.poly.setMap(cb.checked ? map : null);
+				}
+			});
+
+			const colorInput = document.createElement('input');
+			colorInput.type = 'color';
+			colorInput.value = entry?.strokeColor || '#003f5c';
+			colorInput.title = 'Line color';
+			colorInput.style.cursor = 'pointer';
+			colorInput.addEventListener('input', () => {
+				if (!entry) return;
+				entry.strokeColor = colorInput.value;
+				entry.poly.setOptions({ strokeColor: entry.strokeColor });
+			});
+
+			const widthInput = document.createElement('input');
+			widthInput.type = 'range';
+			widthInput.min = 1;
+			widthInput.max = 12;
+			widthInput.value = entry?.strokeWeight || 4;
+			widthInput.style.width = '100%';
+			widthInput.title = 'Line width';
+			widthInput.addEventListener('input', () => {
+				if (!entry) return;
+				entry.strokeWeight = Number(widthInput.value);
+				entry.poly.setOptions({ strokeWeight: entry.strokeWeight });
+			});
+
+			controls.append(cb, colorInput, widthInput);
+
+			const date = formatActivityDate(getActivityDate(act));
+			const text = document.createElement('div');
+			text.style.cursor = 'pointer';
+			text.innerHTML = `<strong>${date}</strong><br/><small>${act.distance_km.toFixed(2)} km • ${formatDuration(act.duration_seconds)}</small>`;
+			text.addEventListener('click', () => {
+				showDetails(act);
+				highlightActivity(act.id);
+			});
+
+			const deleteBtn = document.createElement('button');
+			deleteBtn.textContent = '✕';
+			deleteBtn.title = 'Delete this activity';
+			deleteBtn.style.background = '#d32f2f';
+			deleteBtn.style.color = 'white';
+			deleteBtn.style.border = 'none';
+			deleteBtn.style.borderRadius = '3px';
+			deleteBtn.style.width = '24px';
+			deleteBtn.style.height = '24px';
+			deleteBtn.style.cursor = 'pointer';
+			deleteBtn.style.fontSize = '14px';
+			deleteBtn.style.padding = '0';
+			deleteBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				deleteActivity(act.id);
+			});
+
+			row.append(controls, text, deleteBtn);
+			list.appendChild(row);
+
+			if (entry && entry.poly) {
+				entry.poly.setMap(isVisible ? map : null);
+			}
+		});
+	}
+
+	function getFilteredActivities() {
+		const minKm = parseFloat(document.getElementById('minRange').value) || 0;
+		const maxKm = parseFloat(document.getElementById('maxRange').value) || 100;
+		const dateStr = document.getElementById('dateSearch').value;
+		const typeRun = document.getElementById('typeRun').checked;
+		const typeWalk = document.getElementById('typeWalk').checked;
+		const typeBike = document.getElementById('typeBike').checked;
+
+		return allActivities.filter(act => {
+			const dist = act.distance_km || 0;
+			if (dist < minKm || dist > maxKm) return false;
+
+			const type = getActivityType(act);
+			if (type === 'run' && !typeRun) return false;
+			if (type === 'walk' && !typeWalk) return false;
+			if (type === 'bike' && !typeBike) return false;
+
+			if (dateStr) {
+				const actDate = formatActivityDate(getActivityDate(act));
+				const filterDate = new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+				if (actDate !== filterDate) return false;
+			}
+
+			return true;
+		});
+	}
+
+	async function loadActivities() {
+		const list = document.getElementById('activityList');
+		list.innerHTML = '<div style="padding:12px;color:#666;font-size:12px;">Loading activities…</div>';
+		try {
+			const res = await fetch(`/${BASE_URL}/api/activities?min_km=0`);
+			if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+			allActivities = await res.json();
+			
+			clearMap();
+			ensureMap();
+
+			const filtered = getFilteredActivities();
+			const bounds = new google.maps.LatLngBounds();
+			filtered.forEach(act => {
+				if (!act.coords || !act.coords.length) return;
+				const path = act.coords.map(c => ({ lat: c[0], lng: c[1] }));
+				const defaultColor = act.distance_km > 10 ? '#003f5c' : '#66b2ff';
+				const poly = new google.maps.Polyline({
+					path,
+					strokeColor: defaultColor,
+					strokeOpacity: 0.8,
+					strokeWeight: 4,
+					map,
+				});
+				poly.addListener('mouseover', () => {
+					poly.setOptions({ strokeWeight: 6 });
+					document.getElementById('details').innerHTML = `<strong>${formatActivityDate(getActivityDate(act))}</strong><br>${act.distance_km.toFixed(2)} km — ${formatShortDuration(act.duration_seconds)}`;
+				});
+				poly.addListener('mouseout', () => {
+					const entry = activityMap[act.id];
+					if (entry) poly.setOptions({ strokeWeight: entry.strokeWeight });
+				});
+				poly.addListener('click', () => {
+					showDetails(act);
+					highlightActivity(act.id);
+				});
+				path.forEach(point => bounds.extend(point));
+				activityMap[act.id] = {
+					poly,
+					visible: true,
+					strokeWeight: 4,
+					strokeColor: defaultColor,
+				};
+			});
+
+			if (!bounds.isEmpty()) map.fitBounds(bounds);
+			renderActivityList(filtered);
+			renderStats(filtered);
+		} catch (error) {
+			list.innerHTML = `<div style="padding:12px;color:#d00;font-size:12px;">${error.message}</div>`;
+			console.error(error);
+		}
+	}
+
+	function showDetails(act) {
+		const dist = act.distance_km || 0;
+		const dur = act.duration_seconds || 0;
+		let paceText = 'N/A';
+		if (dist > 0 && dur > 0) {
+			const paceSec = dur / dist;
+			const m = Math.floor(paceSec / 60);
+			const s = Math.round(paceSec % 60).toString().padStart(2, '0');
+			paceText = `${m}:${s} min/km`;
+		}
+		const date = formatActivityDate(getActivityDate(act));
+		const html = `<div style="padding:16px;">
+				<h3 style="margin:0;color:#0b6fb5;font-size:16px;">${date}</h3>
+				<p style="margin:8px 0;font-size:13px;">${dist.toFixed(2)} km — ${formatDuration(dur)}<br/>Start: ${act.start_time || 'unknown'}</p>
+				<p style="margin:8px 0;font-size:13px;"><strong>Avg pace:</strong> ${paceText}</p>
+				<div id="miniMap" style="height:200px; margin-top:12px; border-radius:6px;"></div>
+				<div id="paceChart" style="margin-top:12px; overflow-x:auto; min-height:120px;"></div>
+				<div style="margin-top:12px; display:flex; gap:8px;"><button id="closeDetail" style="background:#0b6fb5;color:#fff;padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-size:13px;flex:1;">Close</button><button id="deleteDetailBtn" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-size:13px;flex:1;">Delete</button></div>
+			</div>`;
+		const wrapper = document.createElement('div');
+		wrapper.innerHTML = html;
+		const node = wrapper.firstElementChild;
+		const overlay = document.createElement('div');
+		overlay.style.position = 'fixed'; overlay.style.left = 0; overlay.style.top = 0; overlay.style.right = 0; overlay.style.bottom = 0;
+		overlay.style.background = 'rgba(0,0,0,0.4)'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center'; overlay.style.zIndex = '9999';
+		const card = document.createElement('div');
+		card.style.background = '#fff'; card.style.borderRadius = '10px'; card.style.maxWidth = '600px'; card.style.width = '90%'; card.style.maxHeight = '80vh'; card.style.overflow = 'auto'; card.style.boxShadow = '0 10px 40px rgba(0,0,0,0.3)';
+		card.appendChild(node);
+		overlay.appendChild(card);
+		document.body.appendChild(overlay);
+		document.getElementById('closeDetail').onclick = () => document.body.removeChild(overlay);
+		document.getElementById('deleteDetailBtn').onclick = () => {
+			document.body.removeChild(overlay);
+			deleteActivity(act.id);
+		};
+		if (window.google && window.google.maps) {
+			try {
+				const miniMap = new google.maps.Map(node.querySelector('#miniMap'), {
+					center: { lat: act.coords[0][0], lng: act.coords[0][1] },
+					zoom: 13,
+					mapTypeId: 'satellite',
+					streetViewControl: false,
+					mapTypeControl: false,
+				});
+				const path = act.coords.map(c => ({ lat: c[0], lng: c[1] }));
+				const poly = new google.maps.Polyline({
+					path,
+					strokeColor: '#0b6fb5',
+					strokeOpacity: 0.8,
+					strokeWeight: 3,
+					map: miniMap,
+				});
+				const miniBounds = new google.maps.LatLngBounds();
+				path.forEach(point => miniBounds.extend(point));
+				miniMap.fitBounds(miniBounds);
+			} catch (e) {
+				console.error('miniMap error', e);
+			}
+		}
+		renderPaceChart(act, node.querySelector('#paceChart'));
+	}
+
+	function renderPaceChart(act, container) {
+		container.innerHTML = '';
+		const coords = act.coords || [];
+		if (!coords.length || !coords[0]?.[2]) {
+			container.textContent = 'No timestamp data available for this activity.';
+			container.style.fontSize = '12px';
+			return;
+		}
+		let paces = [];
+		let accDist = 0;
+		let accTime = 0;
+		let lastTime = null;
+		let lastLatLon = null;
+		for (let i = 0; i < coords.length; i++) {
+			const c = coords[i];
+			const latlon = [c[0], c[1]];
+			const ts = c[2] ? new Date(c[2]) : null;
+			if (lastLatLon && ts && lastTime) {
+				const seg = (function (a, b) {
+					const toRad = v => v * Math.PI / 180;
+					const lat1 = toRad(a[0]), lon1 = toRad(a[1]);
+					const lat2 = toRad(b[0]), lon2 = toRad(b[1]);
+					const dlat = lat2 - lat1, dlon = lon2 - lon1;
+					const R = 6371;
+					const hav = Math.sin(dlat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
+					return 2 * R * Math.asin(Math.sqrt(hav));
+				})(lastLatLon, latlon);
+				const dt = (ts - lastTime) / 1000;
+				accDist += seg;
+				accTime += dt;
+				if (accDist >= 1.0) {
+					paces.push(accTime / accDist);
+					accDist = 0;
+					accTime = 0;
+				}
+			}
+			lastLatLon = latlon;
+			lastTime = ts;
+		}
+		if (!paces.length) {
+			container.textContent = 'Not enough timestamp data for pace chart.';
+			container.style.fontSize = '12px';
+			return;
+		}
+		const max = Math.max(...paces);
+		const chart = document.createElement('div');
+		chart.style.display = 'flex'; chart.style.gap = '4px'; chart.style.alignItems = 'end'; chart.style.minHeight = '120px'; chart.style.paddingBottom = '8px';
+		paces.forEach((p, idx) => {
+			const h = Math.max(20, Math.round((p / max) * 100));
+			const bar = document.createElement('div');
+			bar.style.flex = '0 0 auto'; bar.style.width = '16px'; bar.style.height = `${h}px`;
+			bar.style.background = '#0b6fb5';
+			bar.style.borderRadius = '2px';
+			bar.title = `${Math.floor(p / 60)}:${(Math.round(p % 60)).toString().padStart(2, '0')} min/km`;
+			const lbl = document.createElement('div');
+			lbl.style.fontSize = '10px';
+			lbl.style.textAlign = 'center';
+			lbl.style.marginTop = '4px';
+			lbl.textContent = `${idx + 1}`;
+			const box = document.createElement('div');
+			box.style.display = 'flex'; box.style.flexDirection = 'column'; box.style.alignItems = 'center';
+			box.append(bar, lbl);
+			chart.append(box);
+		});
+		container.append(chart);
+	}
+
+	document.getElementById('minRange').addEventListener('input', () => loadActivities());
+	document.getElementById('maxRange').addEventListener('input', () => loadActivities());
+	document.getElementById('typeRun').addEventListener('change', () => loadActivities());
+	document.getElementById('typeWalk').addEventListener('change', () => loadActivities());
+	document.getElementById('typeBike').addEventListener('change', () => loadActivities());
+	document.getElementById('dateSearch').addEventListener('input', () => loadActivities());
+
+	document.getElementById('globalColor').addEventListener('input', () => applyGlobalFormatting());
+	document.getElementById('globalWidth').addEventListener('input', (e) => {
+		document.getElementById('globalWidthVal').textContent = e.target.value;
+		applyGlobalFormatting();
+	});
+	document.getElementById('globalModeAll').addEventListener('change', () => applyGlobalFormatting());
+	document.getElementById('globalModeSelected').addEventListener('change', () => applyGlobalFormatting());
+
+	(async function init() {
+		try {
+			await loadGoogleMapsApi();
+			ensureMap();
+			loadActivities();
+		} catch (err) {
+			document.getElementById('activityList').innerHTML = `<div style="padding:12px;color:#d00;font-size:12px;">${err.message}</div>`;
+			console.error(err);
+		}
+	})();
+</script>
 
 {% endblock %}

@@ -2,15 +2,27 @@
 <html>
 
   <head>
-		<title>Web App</title>
-      <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-	</head>
+        <title>Web App</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    	</head>
 
 	<body>
 
-    <div class="container-col">
-      {% block content %}
-      {% endblock %}
+    <div style="padding:18px;">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div style="margin-bottom:12px;">
+            {% for m in messages %}
+              <div style="background:#fff6e6;padding:8px;border-radius:6px;border:1px solid #ffe7c2">{{ m }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="container-col">
+        {% block content %}
+        {% endblock %}
+      </div>
     </div>
 
 

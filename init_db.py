@@ -8,14 +8,12 @@
 
 import sqlite3
 
-# connect to database
 connection = sqlite3.connect('database.db')
 
-# open fortune.sql 
-with open('deb_definition.sql') as file:
+# open db_definition.sql and execute it to create tables
+with open('db_definition.sql') as file:
     connection.executescript(file.read())
 
-# close database
 connection.close()
 
-print("-- database initalized --")
+print("-- database initialized --")
