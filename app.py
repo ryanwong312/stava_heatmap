@@ -1,5 +1,5 @@
 # to run the server: 
-# python ap.py
+# python app.py
 
 from flask import Flask, request, render_template, url_for, redirect, jsonify, flash, session
 from helpers import parse_gpx_bytes, insert_activity, get_activities
@@ -11,8 +11,6 @@ import secrets
 import os
 
 BASE_URL = "stava"
-MAP_URL = "map"
-STATS_URL = "stats"
 DEFAULT_GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', 'AIzaSyBQmrQmqsx8vYXLb42SJ8zFZ_0u5YNyjXs')
 
 
@@ -34,39 +32,31 @@ app.secret_key = secrets.token_hex(32)
 @app.route(f"/{BASE_URL}/")
 def home():
     """Home page - landing page with navigation"""
-    return render_template('home.html', BASE_URL=BASE_URL, MAP_URL=MAP_URL, STATS_URL=STATS_URL)
+    return render_template('home.html')
 
 
-@app.route(f"/{BASE_URL}/{MAP_URL}/")
+@app.route(f"/{BASE_URL}/map/")
 def index():
     if not session.get('started'):
         reset_database()
         session['started'] = True
     return render_template(
         'index.html',
-        BASE_URL=BASE_URL,
-        MAP_URL=MAP_URL,
-        STATS_URL=STATS_URL,
         GOOGLE_MAPS_API_KEY=DEFAULT_GOOGLE_MAPS_API_KEY,
     )
 
 
-@app.route(f"/{BASE_URL}/{STATS_URL}/")
+@app.route(f"/{BASE_URL}/stats/")
 def stats():
     """Statistics page"""
-    return render_template(
-        'stats.html',
-        BASE_URL=BASE_URL,
-        MAP_URL=MAP_URL,
-        STATS_URL=STATS_URL,
-    )
+    return render_template('stats.html')
 
 
 @app.route(f"/{BASE_URL}/import", methods=['GET', 'POST'])
 def import_files():
     # Keep GET render for manual browsing
     if request.method == 'GET':
-        return render_template('import.html', BASE_URL=BASE_URL, MAP_URL=MAP_URL, STATS_URL=STATS_URL)
+        return render_template('import.html')
 
     # POSTs to this route are expected to be form uploads from the legacy form
     files = request.files.getlist('files')
