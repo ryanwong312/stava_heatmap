@@ -89,7 +89,7 @@
 
 	async function loadStats() {
 		try {
-			const res = await fetch(`/${BASE_URL}/api/stats-summary`);
+			const res = await fetch(`{{ url_for('api_stats_summary') }}`);
 			if (!res.ok) throw new Error('Failed to fetch stats');
 			const data = await res.json();
 
