@@ -477,7 +477,7 @@
 		const list = document.getElementById('activityList');
 		list.innerHTML = '<div style="padding:12px;color:#666;font-size:12px;">Loading activities…</div>';
 		try {
-			const res = await fetch(`/${BASE_URL}/api/activities?min_km=0`);
+			const res = await fetch(`{{ url_for('api_activities') }}?min_km=0`);
 			if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 			allActivities = await res.json();
 			
