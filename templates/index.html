@@ -183,7 +183,7 @@
 			return;
 		}
 		try {
-			const res = await fetch(`{{ url_for('api_delete_activity' }}`, { method: 'DELETE' });
+			const res = await fetch(`{{ url_for('api_delete_activity') }}`, { method: 'DELETE' });
 			const result = await res.json();
 			if (result.success) {
 				// Remove from local array and reload
@@ -203,7 +203,7 @@
 			return;
 		}
 		try {
-			const res = await fetch(`/${BASE_URL}/api/reset`, { method: 'POST' });
+			const res = await fetch(`{{ url_for('api_reset') }}`, { method: 'POST' });
 			const result = await res.json();
 			if (result.success) {
 				allActivities = [];
