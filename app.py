@@ -11,7 +11,7 @@ import secrets
 import os
 
 BASE_URL = "stava"
-DEFAULT_GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', 'AIzaSyBQmrQmqsx8vYXLb42SJ8zFZ_0u5YNyjXs')
+DEFAULT_GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
 
 
 def reset_database():
