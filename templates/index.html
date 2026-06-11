@@ -12,10 +12,10 @@
 			<a href="/{{ BASE_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
 				<span>← Home</span>
 			</a>
-			<a href="/{{ BASE_URL }}/{{ STATS_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+			<a href="{{ url_for('stats') }}" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
 				<span>📊 Stats</span>
 			</a>
-			<a href="/{{ BASE_URL }}/import" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+			<a href="{{ url_for('import') }}" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
 				<span>📤 Import</span>
 			</a>
 		</div>

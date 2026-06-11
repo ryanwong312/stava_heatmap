@@ -18,4 +18,4 @@ package-mode = false
 flask = "^3.1.2"
 flask-wtf = "^1.2.2"
 gpxpy = "^1.6.2"
-fitparse = "^1.6.0"
+fitparse = "^1.2.0"

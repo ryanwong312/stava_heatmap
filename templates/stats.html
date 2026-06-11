@@ -9,9 +9,9 @@
 			<p style="margin: 6px 0 0 0; font-size: 14px; color: #666;">Analyze your activities</p>
 		</div>
 		<div style="display: flex; gap: 8px;">
-			<a href="/{{ BASE_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">← Home</a>
-			<a href="/{{ BASE_URL }}/{{ MAP_URL }}/" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">🗺️ Map</a>
-			<a href="/{{ BASE_URL }}/import" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">📤 Import</a>
+			<a href="{{ url_for('index') }}" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">← Home</a>
+			<a href="{{ url_for('map') }}" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">🗺️ Map</a>
+			<a href="{{ url_for('import') }}" class="btn" style="background: #0b6fb5; text-decoration: none; padding: 8px 16px; font-size: 14px; border-radius: 6px;">📤 Import</a>
 		</div>
 	</div>
 
