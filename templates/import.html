@@ -121,7 +121,7 @@
           const fd = new FormData();
           fd.append('files', f, f.name);
           try {
-            const res = await fetch(`{{ url_for('api_queue_gimport') }}`, { method: 'POST', body: fd });
+            const res = await fetch(`{{ url_for('api_queue_import') }}`, { method: 'POST', body: fd });
             const j = await res.json();
             if (j.errors && j.errors.length) failed.push(f);
           } catch (err) { failed.push(f); }
