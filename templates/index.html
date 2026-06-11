@@ -183,7 +183,7 @@
 			return;
 		}
 		try {
-			const res = await fetch(`/${BASE_URL}/api/delete/${actId}`, { method: 'DELETE' });
+			const res = await fetch(`{{ url_for('api_delete_activity', act_id=actId) }}`, { method: 'DELETE' });
 			const result = await res.json();
 			if (result.success) {
 				// Remove from local array and reload
