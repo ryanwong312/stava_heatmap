@@ -183,10 +183,13 @@
 			return;
 		}
 		try {
-			const res = await fetch(`/{{ BASE_URL }}/api/delete/${actId}`, { method: 'DELETE' });
+			const url = `/${BASE_URL}/api/delete/${actId}`;
+			console.log('Deleting activity at URL:', url);
+			const res = await fetch(url, { method: 'DELETE' });
+			console.log('Response status:', res.status);
 			const result = await res.json();
+			console.log('Response:', result);
 			if (result.success) {
-				// Remove from local array and reload
 				allActivities = allActivities.filter(a => a.id !== actId);
 				loadActivities();
 			} else {
