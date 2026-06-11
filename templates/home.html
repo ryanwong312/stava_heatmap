@@ -107,11 +107,11 @@
         </p>
 
         <div class="nav-buttons">
-            <a href="/{{ BASE_URL }}/{{ MAP_URL }}/" class="nav-btn map">
+            <a href="{{ url_for('index') }}" class="nav-btn map">
                 <span class="icon">🗺️</span>
                 <span>Run Map</span>
             </a>
-            <a href="/{{ BASE_URL }}/{{ STATS_URL }}/" class="nav-btn stats">
+            <a href="{{ url_for('stats') }}" class="nav-btn stats">
                 <span class="icon">📊</span>
                 <span>Statistics</span>
             </a>
